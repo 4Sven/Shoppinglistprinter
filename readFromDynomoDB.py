@@ -5,6 +5,7 @@ import boto3
 from grocery import Grocery
 from category import Category
 from recipe import Recipe
+from Adafruit_Thermal import *
 
 def loadFromDB(category_value, dynamodb, table_name):
     table = dynamodb.Table(table_name)
@@ -71,17 +72,40 @@ def main():
             # Create a new list for the category and add the grocery to it
             groceries_by_category[category] = [grocery]
 
+
+    printer = Adafruit_Thermal("/dev/serial0", 19200, timeout=5)
+
     # Ready for printing
-    print("Gerichte")
+    #print("Gerichte")
+    # Überschrift drucken
+    printer.setSize('L')
+    printer.println('Menü')
+    printer.setSize('S')
+
     for meal in sorted_recipes:
-        print(f"  {meal.name}")
+        #print(f"  {meal.name}")
+        printer.println(meal.name)
+
+    printer.feed(1)
+    printer.setSize('L')
+    printer.println('Einkaufszettel')
     for category in sorted_categories:
         grocery_in_category = groceries_by_category.get(category.name, [])
         if len(grocery_in_category) > 0:
-            print(f"Category: {category.name}")
+            #print(f"Category: {category.name}")
+            printer.feed(1)
+            printer.setSize('M')
+            printer.underlineOn()
+            printer.println(category.name)
+            printer.underlineOff()
+            printer.setSize('S')
             for grocery in grocery_in_category:
-                print(f"  {grocery.name} -> {grocery.quantity}")
-            print("---")
+                #print(f"  {grocery.name} -> {grocery.quantity}")
+                printer.println(str(grocery.quantity) + ' x ' + grocery.name)
+            #print("---")
+
+    # noch 2 mal vorschieben damit alles auf dem Zettel ist
+    printer.feed(2)
 
 if __name__ == "__main__":
     main()
